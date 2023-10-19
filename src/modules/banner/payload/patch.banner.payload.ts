@@ -9,6 +9,11 @@ import {
 
 export class PatchBannerPayload {
   /**
+   * uuid
+   */
+  _id?: string;
+
+  /**
    * fileName field
    */
   @IsAlphanumeric()

@@ -38,24 +38,21 @@ export class ConfigService {
      * A schema to validate envConfig against
      */
     const envVarsSchema: joi.ObjectSchema = joi.object({
-      APP_ENV: joi
-        .string()
-        .valid("dev", "prod")
-        .default("dev"),
+      APP_ENV: joi.string().valid("dev", "prod").default("dev"),
       APP_URL: joi.string().uri({
         scheme: [/https?/],
       }),
       WEBTOKEN_SECRET_KEY: joi.string().required(),
       WEBTOKEN_EXPIRATION_TIME: joi.number().default(1800),
       DB_URL: joi.string().regex(/^mongodb/),
+      BANNER_FILE_SIZE: joi.number().default(4194304),
     });
 
     /**
      * Represents the status of validation check on the configuration file
      */
-    const { error, value: validatedEnvConfig } = envVarsSchema.validate(
-      envConfig,
-    );
+    const { error, value: validatedEnvConfig } =
+      envVarsSchema.validate(envConfig);
     if (error) {
       throw new Error(`Config validation error: ${error.message}`);
     }

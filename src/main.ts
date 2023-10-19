@@ -4,10 +4,12 @@ import {
   NestFastifyApplication,
 } from "@nestjs/platform-fastify";
 import headers from "fastify-helmet";
+import fastifyMulter from "fastify-multer";
 import fastifyRateLimiter from "fastify-rate-limit";
 import { AppModule } from "./modules/app/app.module";
 import { ValidationPipe } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
+import { FileInterceptor } from "@nestjs/platform-express";
 
 /**
  * The url endpoint for open api ui
@@ -49,6 +51,7 @@ export const SWAGGER_API_CURRENT_VERSION = "1.0";
     max: 100,
     timeWindow: 60000,
   });
+  app.register(fastifyMulter.contentParser);
   app.useGlobalPipes(new ValidationPipe());
 
   await app.listen(9000, "0.0.0.0");

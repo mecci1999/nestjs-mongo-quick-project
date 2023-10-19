@@ -5,6 +5,8 @@ import { Banner } from "./banner.model";
 import { fileUploadFilter } from "../../utils/file-upload-filter";
 import { ConfigService } from "../config/config.service";
 import { ConfigModule } from "modules/config/config.module";
+import { BannerService } from "./banner.service";
+import { BannerController } from "./banner.controller";
 
 // 图片拦截器
 
@@ -24,8 +26,8 @@ import { ConfigModule } from "modules/config/config.module";
       }),
     }),
   ],
-  providers: [],
-  exports: [],
-  controllers: [],
+  providers: [BannerService],
+  exports: [BannerService],
+  controllers: [BannerController],
 })
 export class BannerModule {}

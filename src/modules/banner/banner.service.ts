@@ -35,7 +35,7 @@ export class BannerService {
   /**
    * 获取所有的banner
    */
-  private getAll(): Promise<IBanner[]> {
+  public getAll(): Promise<IBanner[]> {
     return this.bannerModel
       .find({})
       .select("_id fileName jumpUrl order")
@@ -45,16 +45,47 @@ export class BannerService {
   /**
    * 获取单条banner
    */
-  private get(id: string): Promise<IBanner> {
+  public get(id: string): Promise<IBanner> {
     return this.bannerModel.findById(id).exec();
   }
 
   /**
    * 新增一个banner
    */
-  private async create(payload: PatchBannerPayload): Promise<IBanner> {
+  public async create(payload: PatchBannerPayload): Promise<IBanner> {
     const createBanner = new this.bannerModel({ ...payload });
 
     return createBanner.save();
+  }
+
+  /**
+   * 编辑banner根据id
+   */
+  public async edit(payload: PatchBannerPayload): Promise<IBanner> {
+    const { _id } = payload;
+    const updatedProfile = await this.bannerModel.updateOne({ _id }, payload);
+
+    if ((updatedProfile as any)?.nModified !== 1) {
+      throw new BadRequestException(
+        "The banner with that id does not exist in the system. Please try another id.",
+      );
+    }
+
+    return this.get(_id);
+  }
+
+  /**
+   * 删除一个banner根据id
+   */
+  public async delete(_id: string): Promise<IGenericMessageBody> {
+    return this.bannerModel.deleteOne({ _id }).then((banner) => {
+      if (banner.deletedCount === 1) {
+        return { message: `Deleted ${_id} from records` };
+      } else {
+        throw new BadRequestException(
+          `Failed to delete a banner by the name of ${_id}.`,
+        );
+      }
+    });
   }
 }
