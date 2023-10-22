@@ -9,7 +9,6 @@ import fastifyRateLimiter from "fastify-rate-limit";
 import { AppModule } from "./modules/app/app.module";
 import { ValidationPipe } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
-import { FileInterceptor } from "@nestjs/platform-express";
 
 /**
  * The url endpoint for open api ui
@@ -47,11 +46,11 @@ export const SWAGGER_API_CURRENT_VERSION = "1.0";
   SwaggerModule.setup(SWAGGER_API_ROOT, app, document);
   app.enableCors();
   app.register(headers);
+  app.register(fastifyMulter.contentParser);
   app.register(fastifyRateLimiter, {
     max: 100,
     timeWindow: 60000,
   });
-  app.register(fastifyMulter.contentParser);
   app.useGlobalPipes(new ValidationPipe());
 
   await app.listen(9000, "0.0.0.0");

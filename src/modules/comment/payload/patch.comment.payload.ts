@@ -5,53 +5,44 @@ import {
   IsUrl,
   IsNumber,
   IsString,
+  IsEmpty,
 } from "class-validator";
 
-export class PatchBannerPayload {
+export class PatchCommentPayload {
   /**
    * uuid
    */
   _id?: string;
 
   /**
-   * fileName field
+   * pageIndex field
    */
   @ApiProperty({
     required: false,
   })
-  fileName?: string;
+  pageIndex?: number;
 
   /**
-   * mimetype field
+   * pageSize field
    */
   @ApiProperty({
     required: false,
   })
-  mimetype?: string;
+  pageSize?: number;
 
   /**
-   * size field
+   * accid field
    */
   @ApiProperty({
     required: false,
   })
-  size?: number;
+  accid?: string;
 
   /**
-   * jumpUrl field
+   * content field
    */
   @ApiProperty({
     required: false,
   })
-  @IsUrl()
-  jumpUrl?: string;
-
-  /**
-   * order field
-   */
-  @ApiProperty({
-    required: false,
-  })
-  @IsNumber()
-  order?: number;
+  content?: string;
 }

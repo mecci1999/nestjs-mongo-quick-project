@@ -2,19 +2,28 @@ import { Schema, Document } from "mongoose";
 import { AppRoles } from "modules/app/app.roles";
 
 // Scheme
-export const Banner = new Schema({
+export const Post = new Schema({
+  name: { type: String, require: true }, // 作品名称
+  description: { type: String, require: false }, // 作品描述
   fileName: { type: String, require: false }, // 文件名
   mimetype: { type: String, require: false }, // 文件类型
   size: { type: Number, require: false }, // 文件大小
-  jumpUrl: { type: String, require: false }, // 跳转链接
-  order: { type: Number, require: false, default: 0 }, // banner图排序
+  url: { type: String, require: true }, // 作品链接
 });
 
-export class IBanner extends Document {
+export class IPost extends Document {
   /**
    * UUID
    */
   readonly _id: Schema.Types.ObjectId;
+  /**
+   * name
+   */
+  name: string;
+  /**
+   * description
+   */
+  description: string;
   /**
    * fileName
    */
@@ -28,11 +37,7 @@ export class IBanner extends Document {
    */
   size: number;
   /**
-   * jumpUrl
+   * url
    */
-  jumpUrl: string;
-  /**
-   * order
-   */
-  order: number;
+  url: string;
 }

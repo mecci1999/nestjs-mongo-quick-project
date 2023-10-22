@@ -14,9 +14,13 @@ import {
 import { AuthGuard } from "@nestjs/passport";
 import { ACGuard, UseRoles } from "nest-access-control";
 import { ApiBearerAuth, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { BannerService, IGenericMessageBody } from "./banner.service";
-import { IBanner } from "./banner.model";
-import { PatchBannerPayload } from "./payload/patch.banner.payload";
+import {
+  SituationService,
+  IGenericMessageBody,
+  PaginationResult,
+} from "./situation.service";
+import { ISituation } from "./situation.model";
+import { PatchSituationPayload } from "./payload/patch.situation.payload";
 import _ from "lodash";
 import { join } from "path";
 import formidable from "formidable";
@@ -25,70 +29,87 @@ import { saveFile } from "utils/file-upload";
 import { ConfigService } from "modules/config/config.service";
 
 @ApiBearerAuth()
-@ApiTags("banner")
-@Controller("api/banner")
-export class BannerController {
+@ApiTags("situation")
+@Controller("api/situation")
+export class SituationController {
   constructor(
-    private readonly bannerService: BannerService,
+    private readonly postService: SituationService,
     private readonly configService: ConfigService,
   ) {}
 
   /**
-   * 获取banner列表
+   * 获取首页列表
    */
-  @Get("list")
-  //   @UseGuards(AuthGuard('jwt'))
-  @ApiResponse({ status: 200, description: "Fetch Banner Request Received" })
-  @ApiResponse({ status: 400, description: "Fetch Banner Request Failed" })
-  async getBannerList(): Promise<IBanner[]> {
-    const list = await this.bannerService.getAll();
+  @Post("list/front")
+  @ApiResponse({ status: 200, description: "Fetch Post Request Received" })
+  @ApiResponse({ status: 400, description: "Fetch Post Request Failed" })
+  async getFrontPostList(
+    @Body() payload: PatchSituationPayload,
+  ): Promise<PaginationResult<ISituation[]>> {
+    const list = await this.postService.getAll(
+      "",
+      payload?.pageIndex || 1,
+      payload?.pageSize || 10,
+      true,
+    );
     if (!list) {
-      throw new BadRequestException("The banner list is empty.");
+      throw new BadRequestException("The Post list is empty.");
     }
 
     return list;
   }
 
   /**
-   * 新增banner
+   * 后台获取动态列表
+   */
+  @Post("list/end")
+  @ApiResponse({ status: 200, description: "Fetch Post Request Received" })
+  @ApiResponse({ status: 400, description: "Fetch Post Request Failed" })
+  async getEndPostListEnd(
+    @Body() payload: PatchSituationPayload,
+  ): Promise<PaginationResult<ISituation[]>> {
+    const list = await this.postService.getAll(
+      payload?.keyword || "",
+      payload?.pageIndex || 1,
+      payload?.pageSize || 10,
+      false,
+    );
+    if (!list) {
+      throw new BadRequestException("The Post list is empty.");
+    }
+
+    return list;
+  }
+
+  /**
+   * 新增Situation
    */
   @Post("create")
   //   @UseGuards(AuthGuard('jwt'))
-  @ApiResponse({ status: 200, description: "Post Banner Request Received" })
-  @ApiResponse({ status: 400, description: "Post Banner Request Failed" })
-  async createBanner(@Body() payload: PatchBannerPayload) {
+  @ApiResponse({ status: 200, description: "新增动态成功" })
+  @ApiResponse({ status: 400, description: "新增动态失败" })
+  async createPost(@Body() payload: PatchSituationPayload) {
     // 判断是否为空
     if (!payload) {
       throw new HttpException("参数错误", HttpStatus.BAD_REQUEST);
     }
 
-    // // 获取跳转地址
-    const jumpUrl = payload.jumpUrl;
-    // // 获取排序
-    const order = payload.order;
-
-    // 获取文件数据
-    const fileName = payload.fileName;
-    const size = payload.size;
-    const mimetype = payload.mimetype;
-
-    return this.bannerService.create({
-      jumpUrl,
-      order,
-      fileName,
-      size,
-      mimetype,
+    return this.postService.create({
+      ...payload,
+      time: Date.now(),
+      status: 0,
+      isTop: false,
     });
   }
 
   /**
-   * 上传banner图片
+   * 上传Post图片
    */
   @Post("upload")
   //   @UseGuards(AuthGuard('jwt'))
-  @ApiResponse({ status: 200, description: "Post Banner Request Received" })
-  @ApiResponse({ status: 400, description: "Post Banner Request Failed" })
-  async uploadBannerImage(@Req() request: any) {
+  @ApiResponse({ status: 200, description: "Post Post Request Received" })
+  @ApiResponse({ status: 400, description: "Post Post Request Failed" })
+  async uploadPostImage(@Req() request: any) {
     const form = formidable({});
 
     const formData: any = {};
@@ -133,10 +154,7 @@ export class BannerController {
         const filePath = file.filepath;
 
         // 获取文件大小
-        const maxSize = parseInt(
-          this.configService.get("BANNER_FILE_SIZE"),
-          10,
-        );
+        const maxSize = parseInt(this.configService.get("POST_FILE_SIZE"), 10);
 
         if (file.size > maxSize) {
           // 超出限制大小
@@ -144,7 +162,7 @@ export class BannerController {
         }
 
         // 将文件存储到指定目录下
-        const targetDirectory = join(process.cwd(), "uploads", "banner");
+        const targetDirectory = join(process.cwd(), "uploads", "situation");
         // // 生成随机的文件名
         const randomFileName =
           Math.random().toString(36).substring(7) + uploadedFile[0].newFilename;
@@ -177,7 +195,7 @@ export class BannerController {
         size: number;
         mimetype: string;
       }) => {
-        const targetDirectory = join(process.cwd(), "uploads", "banner");
+        const targetDirectory = join(process.cwd(), "uploads", "situation");
         // 检查该目录是否存在
         if (!fs.existsSync(targetDirectory)) {
           // 不存在，创建该目录
@@ -205,70 +223,71 @@ export class BannerController {
   }
 
   /**
-   * 获取banner图片服务
+   * 获取Post图片服务
    */
-  @Get(":bannerId")
-  @ApiResponse({ status: 200, description: "Post Banner Request Received" })
-  @ApiResponse({ status: 400, description: "Post Banner Request Failed" })
-  async getBannerImage(@Res() res, @Param("bannerId") bannerId: string) {
+  @Get(":situationId")
+  @ApiResponse({ status: 200, description: "Post Post Request Received" })
+  @ApiResponse({ status: 400, description: "Post Post Request Failed" })
+  async getPostImage(@Res() res, @Param("situationId") situationId: string) {
     // 判断是否为空
-    if (!bannerId) {
-      throw new HttpException("错误的bannerId", HttpStatus.BAD_REQUEST);
+    if (!situationId) {
+      throw new HttpException("situationId", HttpStatus.BAD_REQUEST);
     }
 
-    // 通过bannerId获取到对应的filename
-    const banner = await this.bannerService.get(bannerId);
+    // 通过postId获取到对应的filename
+    const situation = await this.postService.get(situationId);
     // 文件名
-    const filename = banner.fileName;
+    const filename = situation.fileName;
 
-    // banner图存在的目录路径
-    const path = join(process.cwd(), "uploads", "banner", filename);
+    // Post图存在的目录路径
+    const path = join(process.cwd(), "uploads", "situation", filename);
     // 检查文件是否存在
     const fileExist = fs.existsSync(path);
     if (!fileExist) {
-      throw new HttpException("不存在对应的banner图", HttpStatus.BAD_REQUEST);
+      throw new HttpException("不存在对应的Post图", HttpStatus.BAD_REQUEST);
     }
 
     // 获取文件
     const file = fs.readFileSync(path);
-    res.type(banner.mimetype).send(file);
+    res.type(situation.mimetype).send(file);
   }
+
   /**
-   * 更新banner
+   * 更新Post
    */
   @Post("update")
-  @ApiResponse({ status: 200, description: "Post Banner Request Received" })
-  @ApiResponse({ status: 400, description: "Post Banner Request Failed" })
-  async updateBanner(@Body() payload: PatchBannerPayload) {
+  @ApiResponse({ status: 200, description: "Post Post Request Received" })
+  @ApiResponse({ status: 400, description: "Post Post Request Failed" })
+  async updatePost(@Body() payload: PatchSituationPayload) {
     // 判断是否为空
     if (!payload._id) {
-      throw new HttpException("错误的bannerId", HttpStatus.BAD_REQUEST);
+      throw new HttpException("错误的PostId", HttpStatus.BAD_REQUEST);
     }
 
-    // 通过bannerId获取到对应的filename
-    const banner = await this.bannerService.get(payload._id);
+    // 通过PostId获取到对应的filename
+    const post = await this.postService.get(payload._id);
 
-    if (!banner) {
-      throw new HttpException("不存在对应的banner", HttpStatus.BAD_REQUEST);
+    if (!post) {
+      throw new HttpException("不存在对应的Post", HttpStatus.BAD_REQUEST);
     }
 
-    // 修改banner内容
-    return this.bannerService.edit(payload);
+    // 修改Post内容
+    return this.postService.edit(payload);
   }
 
   /**
-   * 删除banner
+   * 删除post
    */
   @Post("delete")
-  @ApiResponse({ status: 200, description: "Post Banner Request Received" })
-  @ApiResponse({ status: 400, description: "Post Banner Request Failed" })
-  async deleteBanner(@Body("ids") ids: string[]) {
+  @ApiResponse({ status: 200, description: "Post Post Request Received" })
+  @ApiResponse({ status: 400, description: "Post Post Request Failed" })
+  async deletePost(@Body("ids") ids: string[]) {
     // 判断是否为空
     if (!ids || ids.length === 0) {
       throw new HttpException("错误的参数", HttpStatus.BAD_REQUEST);
     }
 
-    // 修改banner内容
-    return this.bannerService.delete(ids);
+    // 修改Post内容
+    return this.postService.delete(ids);
   }
 }

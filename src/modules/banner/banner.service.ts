@@ -65,7 +65,7 @@ export class BannerService {
     const { _id } = payload;
     const updatedProfile = await this.bannerModel.updateOne({ _id }, payload);
 
-    if ((updatedProfile as any)?.nModified !== 1) {
+    if ((updatedProfile as any)?.matchedCount === 0) {
       throw new BadRequestException(
         "The banner with that id does not exist in the system. Please try another id.",
       );
@@ -75,16 +75,14 @@ export class BannerService {
   }
 
   /**
-   * 删除一个banner根据id
+   * 删除banner根据id
    */
-  public async delete(_id: string): Promise<IGenericMessageBody> {
-    return this.bannerModel.deleteOne({ _id }).then((banner) => {
-      if (banner.deletedCount === 1) {
-        return { message: `Deleted ${_id} from records` };
+  public async delete(ids: string[]): Promise<IGenericMessageBody> {
+    return this.bannerModel.deleteMany({ _id: { $in: ids } }).then((banner) => {
+      if (banner.deletedCount > 0) {
+        return { message: `Deleted success from records.` };
       } else {
-        throw new BadRequestException(
-          `Failed to delete a banner by the name of ${_id}.`,
-        );
+        throw new BadRequestException(`Failed to delete.`);
       }
     });
   }

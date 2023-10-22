@@ -46,6 +46,7 @@ export class ConfigService {
       WEBTOKEN_EXPIRATION_TIME: joi.number().default(1800),
       DB_URL: joi.string().regex(/^mongodb/),
       BANNER_FILE_SIZE: joi.number().default(4194304),
+      POST_FILE_SIZE: joi.number().default(4194304),
     });
 
     /**

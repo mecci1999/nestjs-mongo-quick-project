@@ -1,30 +1,14 @@
 import { Module } from "@nestjs/common";
-import { MulterModule } from "@nestjs/platform-express";
 import { MongooseModule } from "@nestjs/mongoose";
 import { Banner } from "./banner.model";
-import { fileUploadFilter } from "../../utils/file-upload-filter";
-import { ConfigService } from "../config/config.service";
-import { ConfigModule } from "modules/config/config.module";
 import { BannerService } from "./banner.service";
 import { BannerController } from "./banner.controller";
-
-// 图片拦截器
+import { ConfigModule } from "modules/config/config.module";
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: "Banner", schema: Banner }]),
-    MulterModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        dest: "uploads/banner",
-        fileFilter: fileUploadFilter,
-        limits: {
-          fileSize: parseInt(configService.get("BANNER_FILE_SIZE"), 10),
-          files: 1,
-        },
-      }),
-    }),
+    ConfigModule,
   ],
   providers: [BannerService],
   exports: [BannerService],
